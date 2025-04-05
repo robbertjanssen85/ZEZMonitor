@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="title">Gemeentelijk Mobiliteitsdashboard</title>
+
+    <!-- CSS Links (Leaflet, Fonts) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styling -->
+    <style>
+        /* --- Root variables --- */
+        :root {
+            --dmi-primary-blue: #004b8c; --dmi-accent-teal: #00778b;
+            --dmi-light-grey: #f4f7f6; --dmi-medium-grey: #dee2e6;
+            --dmi-dark-grey: #495057; --dmi-white: #ffffff;
+            --dmi-orange-accent: #f58220; --pbi-header-bg: #2c3e50;
+             --pbi-filter-bg: #34495e; --pbi-card-header: #ecf0f1;
+        }
+        /* --- Base styles (body, sidebar, main, header, page) --- */
+        body { font-family: 'Open Sans', sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--dmi-light-grey); color: var(--dmi-dark-grey); font-size: 16px; line-height: 1.6; }
+        #sidebar { width: 250px; background-color: var(--pbi-header-bg); color: var(--dmi-white); padding: 20px 0; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+        #sidebar h2 { font-size: 1.4em; padding: 0 20px 15px 20px; margin: 0 0 15px 0; border-bottom: 1px solid #4a637c; font-weight: 600; }
+        #sidebar button.nav-button { background-color: transparent; color: var(--dmi-white); border: none; padding: 12px 20px; width: 100%; text-align: left; cursor: pointer; font-size: 0.95em; border-left: 4px solid transparent; transition: background-color 0.2s ease, border-left 0.2s ease; }
+        #sidebar button.nav-button:hover { background-color: #3e5770; }
+        #sidebar button.nav-button.active { background-color: #4a637c; border-left: 4px solid var(--dmi-accent-teal); font-weight: bold; }
+        #main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        #top-header { background-color: var(--dmi-white); padding: 15px 30px; border-bottom: 1px solid var(--dmi-medium-grey); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        #top-header h1 { margin: 0; font-size: 1.6em; color: var(--pbi-header-bg); font-weight: 600; }
+        #lang-toggle { background-color: var(--dmi-accent-teal); color: var(--dmi-white); border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-size: 0.9em; transition: background-color 0.2s ease; }
+        #lang-toggle:hover { background-color: #005f6b; }
+        main { flex-grow: 1; padding: 20px 30px; overflow-y: auto; background-color: var(--dmi-light-grey); }
+        .page { display: none; } .page.active { display: block; }
+        /* --- Filter bar, Content Card, Grid Layout --- */
+        .filter-bar { background-color: var(--dmi-white); padding: 15px 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--dmi-medium-grey); }
+        .filter-controls { display: flex; flex-wrap: wrap; gap: 20px; }
+        .filter-group { display: flex; flex-direction: column; } .filter-group label { font-size: 0.85em; margin-bottom: 4px; font-weight: 600; color: var(--dmi-dark-grey); }
+        .filter-group input[type="date"], .filter-group select { padding: 8px 10px; border: 1px solid var(--dmi-medium-grey); border-radius: 4px; font-size: 0.9em; min-width: 150px; }
+        .content-card { background-color: var(--dmi-white); padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.08); border: 1px solid var(--dmi-medium-grey); }
+        .content-card h3 { margin-top: 0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--dmi-medium-grey); color: var(--dmi-primary-blue); font-size: 1.2em; font-weight: 600; }
+        .content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .grid-col-span-2 { grid-column: span 2; } .grid-col-span-3 { grid-column: span 3; } .grid-col-span-all { grid-column: 1 / -1; }
+        /* --- KPI, Table, Link Card styles --- */
+        .kpi-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: flex-start; }
+        .kpi { background-color: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center; border: 1px solid var(--dmi-medium-grey); flex: 1; min-width: 120px; }
+        .kpi .value { font-size: 1.8em; font-weight: 700; color: var(--dmi-primary-blue); margin-bottom: 3px; line-height: 1.2; }
+        .kpi .label { font-size: 0.85em; color: var(--dmi-dark-grey); font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em;} th, td { border: 1px solid var(--dmi-medium-grey); padding: 8px 10px; text-align: left; vertical-align: top; } th { background-color: #e9ecef; font-weight: 600; color: var(--dmi-dark-grey); } tbody tr:nth-child(odd) { background-color: #f8f9fa; } tbody tr:hover { background-color: #e2e6ea; }
+        .link-card-container { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; } .link-card { background-color: var(--dmi-white); padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 1px solid var(--dmi-medium-grey); width: 250px; text-align: center; cursor: pointer; transition: transform 0.2s ease; } .link-card:hover { transform: translateY(-5px); } .link-card img { max-width: 60px; margin-bottom: 15px; } .link-card span { font-size: 1.1em; font-weight: 600; color: var(--dmi-primary-blue); display: block; }
+
+        /* --- Map & Chart Placeholders (Simple text version) --- */
+        .map-container, .chart-placeholder, .table-placeholder, .text-placeholder, .legend-placeholder {
+            min-height: 150px;
+            display: flex; /* Use flex to center the placeholder text */
+            align-items: center;
+            justify-content: center;
+            background-color: #e9ecef; /* Placeholder background */
+            border-radius: 4px;
+            color: #6c757d; /* Placeholder text color */
+            font-style: italic; /* Placeholder text style */
+            padding: 20px;
+            text-align: center;
+            border: 1px dashed var(--dmi-medium-grey);
+            overflow: hidden; /* Just in case */
+        }
+        .map-container {
+            height: 400px; /* Default map height */
+            border-style: solid; /* Maps usually have solid border */
+        }
+        .legend-placeholder { min-height: 50px; }
+        .text-placeholder {
+            text-align: left; /* Align descriptive text left */
+            align-items: flex-start;
+            font-style: normal; /* Normal font style for descriptions */
+             color: var(--dmi-dark-grey);
+        }
+        .text-placeholder p, .text-placeholder ul { margin-bottom: 1em; }
+        .text-placeholder ul { padding-left: 20px; }
+
+        /* --- Filter Styling --- */
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--dmi-medium-grey);
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-group label {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dmi-dark-grey);
+        }
+        .filter-group input[type="date"],
+        .filter-group select {
+            padding: 8px 10px;
+            border: 1px solid var(--dmi-medium-grey);
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar HTML -->
+    <div id="sidebar">
+        <h2 data-translate="dashboardTitleShort">Mobiliteit</h2>
+        <!-- Nav buttons -->
+        <button class="nav-button active" data-page="page-home" data-translate="navHome">Home</button>
+        <button class="nav-button" data-page="page-zez" data-translate="navZez">ZEZ Monitoring</button>
+        <button class="nav-button" data-page="page-enforcement" data-translate="navEnforcement">Handhaving & Analyse</button>
+        <button class="nav-button" data-page="page-nat-shipments" data-translate="navNatShipments">Nationale Zendingen</button>
+        <button class="nav-button" data-page="page-int-shipments" data-translate="navIntShipments">Internationale Zendingen</button>
+        <button class="nav-button" data-page="page-nat-trips" data-translate="navNatTrips">Nationale Deelritten</button>
+        <button class="nav-button" data-page="page-int-trips" data-translate="navIntTrips">Internationale Deelritten</button>
+        <button class="nav-button" data-page="page-postcode" data-translate="navPostcode">Deelritten per Postcode</button>
+        <button class="nav-button" data-page="page-nuts" data-translate="navNuts">NUTS3 Analyse</button>
+        <button class="nav-button" data-page="page-routemap" data-translate="navRouteMap">Routekaart Gemeente</button>
+        <button class="nav-button" data-page="page-trends" data-translate="navTrends">Trends</button>
+        <button class="nav-button" data-page="page-data-completeness" data-translate="navDataCompleteness">Datavolledigheid</button>
+        <button class="nav-button" data-page="page-links" data-translate="navLinks">Externe Links</button>
+        <button class="nav-button" data-page="page-explanation" data-translate="navExplanation">Toelichting</button>
+        <button class="nav-button" data-page="page-definitions" data-translate="navDefinitions">Definities</button>
+    </div>
+
+    <!-- Main Content Area HTML -->
+    <div id="main-content">
+        <header id="top-header">
+             <h1 id="page-title">Home</h1>
+             <button id="lang-toggle">Switch to English</button>
+        </header>
+
+        <main>
+            <!-- Page: Home -->
+            <div id="page-home" class="page active">
+                 <div class="content-card">
+                    <h3 data-translate="homeWelcome">Welkom bij het Gemeentelijk Mobiliteitsdashboard</h3>
+                    <p data-translate="homeDesc1">Dit dashboard biedt inzicht in stedelijke logistiek en de impact van zero-emissiezones (ZEZ) binnen de gemeente.</p>
+                    <p data-translate="homeDesc2">Gebruik de navigatie aan de linkerkant om door de verschillende analyses te bladeren.</p>
+                 </div>
+            </div>
+
+            <!-- Page: ZEZ Monitoring (with simple placeholders) -->
+            <div id="page-zez" class="page">
+                <div class="filter-bar">
+                    <h3>Filters</h3>
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label for="filter-zez-date" data-translate="filterLabelDate">Datum</label>
+                            <input type="date" id="filter-zez-date">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-zez-zone" data-translate="filterLabelZone">ZE Zone</label>
+                            <select id="filter-zez-zone">
+                                <option value="all" data-translate="filterOptionAll">Alle Zones</option>
+                                <option value="zone1">Zone 1</option>
+                                <option value="zone2">Zone 2</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-zez-vehicle" data-translate="filterLabelVehicleType">Voertuigtype</label>
+                            <select id="filter-zez-vehicle">
+                                <option value="all" data-translate="filterOptionAllTypes">Alle Types</option>
+                                <option value="truck" data-translate="filterOptionTruck">Vrachtwagens</option>
+                                <option value="van" data-translate="filterOptionVan">Bestelwagens</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                 <div class="content-grid">
+                    <div class="content-card grid-col-span-all">
+                        <h3>Kernindicatoren</h3>
+                        <div class="kpi-container">
+                            <div class="kpi">
+                                <div class="value" id="kpi-vehicles-total">-</div>
+                                <div class="label" data-translate="kpiVehiclesTotal">Voertuigen in ZEZ</div>
+                            </div>
+                            <div class="kpi">
+                                <div class="value" id="kpi-vehicles-truck">-</div>
+                                <div class="label" data-translate="kpiVehiclesTruck">Vrachtwagens</div>
+                            </div>
+                            <div class="kpi">
+                                <div class="value" id="kpi-vehicles-van">-</div>
+                                <div class="label" data-translate="kpiVehiclesVan">Bestelwagens</div>
+                            </div>
+                            <div class="kpi">
+                                <div class="value" id="kpi-violations">-</div>
+                                <div class="label" data-translate="kpiViolations">Mogelijke Overtredingen</div>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="content-card grid-col-span-2">
+                         <h3>ZEZ Kaart & Camera Locaties</h3>
+                         <img src="img/Screenshot 2025-04-05 at 10.02.33.png" alt="ZEZ Map & Camera Locations" style="width: 100%; height: auto;">
+                     </div>
+                     <div class="content-card">
+                        <h3>Trend: Voertuigen per Uur</h3>
+                        <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.17.png" alt="Vehicles per Hour Trend" style="width: 100%; height: auto;">
+                     </div>
+                      <div class="content-card grid-col-span-2">
+                         <h3>Verdeling Voertuigtypes</h3>
+                         <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.58 - 3 januari 2022.png" alt="Vehicle Type Distribution" style="width: 100%; height: auto;">
+                     </div>
+                 </div>
+            </div>
+
+            <!-- Page: Enforcement -->
+             <div id="page-enforcement" class="page">
+                <div class="filter-bar">
+                    <h3>Filters</h3>
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label for="filter-enforce-startdate" data-translate="filterLabelStartDate">Startdatum</label>
+                            <input type="date" id="filter-enforce-startdate">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-enforce-enddate" data-translate="filterLabelEndDate">Einddatum</label>
+                            <input type="date" id="filter-enforce-enddate">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-enforce-zone" data-translate="filterLabelZone">ZE Zone</label>
+                            <select id="filter-enforce-zone">
+                                <option value="all" data-translate="filterOptionAll">Alle Zones</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-enforce-camera" data-translate="filterLabelCamera">Camera ID</label>
+                            <select id="filter-enforce-camera">
+                                <option value="all" data-translate="filterOptionAll">Alle Cameras</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-enforce-exemptiontype" data-translate="filterLabelExemptionType">Type Ontheffing</label>
+                            <select id="filter-enforce-exemptiontype">
+                                <option value="all" data-translate="filterOptionAllExemptions">Alle Types</option>
+                                <option value="landelijk" data-translate="filterOptionLandelijk">Landelijke ontheffing</option>
+                                <option value="lokaal" data-translate="filterOptionLokaal">Lokale ontheffing</option>
+                                <option value="tijdelijk" data-translate="filterOptionTijdelijk">Tijdelijke ontheffing</option>
+                                <option value="dag" data-translate="filterOptionDag">Dag ontheffing</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                 <div class="content-card">
+                    <div class="kpi-container">
+                        <div class="kpi">
+                            <div class="value" id="kpi-exemptions-total">-</div>
+                            <div class="label" data-translate="kpiExemptionsTotal">Verleende Ontheffingen</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value" id="kpi-fines-total">-</div>
+                            <div class="label" data-translate="kpiFinesTotal">Geïnde Boetes (€)</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value" id="kpi-violations-period">-</div>
+                            <div class="label" data-translate="kpiViolationsPeriod">Overtredingen (Periode)</div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="content-grid">
+                     <div class="content-card grid-col-span-2">
+                        <h3 data-translate="tableTitleExemptions">Ontheffingen Details</h3>
+                        <table id="table-exemptions">
+                            <thead>
+                                <tr>
+                                    <th data-translate="tableHeaderCompany">Bedrijf</th>
+                                    <th data-translate="tableHeaderPlate">Kenteken (gemaskeerd)</th>
+                                    <th data-translate="tableHeaderExemptionType">Type Ontheffing</th>
+                                    <th data-translate="tableHeaderValidUntil">Geldig tot</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Transport Groep Nederland B.V.</td>
+                                    <td>VX-***-98</td>
+                                    <td>Landelijke ontheffing</td>
+                                    <td>31-12-2025</td>
+                                </tr>
+                                <tr>
+                                    <td>Stadsdistributie Utrecht</td>
+                                    <td>1-ABC-***</td>
+                                    <td>Lokale ontheffing</td>
+                                    <td>30-06-2026</td>
+                                </tr>
+                                <tr>
+                                    <td>Koeriersdienst De Snelle Vogel</td>
+                                    <td>ZY-***-12</td>
+                                    <td>Tijdelijke ontheffing</td>
+                                    <td>01-03-2025</td>
+                                </tr>
+                                <tr>
+                                    <td>Bouwbedrijf Jansen & Zonen</td>
+                                    <td>TR-***-55</td>
+                                    <td>Dag ontheffing</td>
+                                    <td>15-09-2025</td>
+                                </tr>
+                                <tr>
+                                    <td>VersLogistiek Van Dijk</td>
+                                    <td>9-***-XYZ</td>
+                                    <td>Lokale ontheffing</td>
+                                    <td>31-12-2024</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                     </div>
+                     <div class="content-card grid-col-span-2">
+                        <h3 data-translate="tableTitleFines">Boete Details</h3>
+                        <table id="table-fines">
+                            <thead>
+                                <tr>
+                                    <th data-translate="tableHeaderTimestamp">Tijdstip</th>
+                                    <th data-translate="tableHeaderLocation">Locatie/Camera</th>
+                                    <th data-translate="tableHeaderPlateShort">Kenteken</th>
+                                    <th data-translate="tableHeaderFineAmount">Bedrag (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2024-04-10 09:32:15</td>
+                                    <td>Camera C03 - Centrumring Oost</td>
+                                    <td>BC-***-11</td>
+                                    <td>€ 110,00</td>
+                                </tr>
+                                <tr>
+                                    <td>2024-04-10 08:15:40</td>
+                                    <td>Camera Z01 - Zone Zuid Ingang</td>
+                                    <td>FG-***-45</td>
+                                    <td>€ 110,00</td>
+                                </tr>
+                                <tr>
+                                    <td>2024-04-09 14:55:02</td>
+                                    <td>Camera C03 - Centrumring Oost</td>
+                                    <td>JK-***-78</td>
+                                    <td>€ 110,00</td>
+                                </tr>
+                                <tr>
+                                    <td>2024-04-09 11:05:18</td>
+                                    <td>Camera N02 - Industrie Noord</td>
+                                    <td>LM-***-01</td>
+                                    <td>€ 110,00</td>
+                                </tr>
+                                <tr>
+                                    <td>2024-04-08 16:21:59</td>
+                                    <td>Camera Z01 - Zone Zuid Ingang</td>
+                                    <td>PQ-***-34</td>
+                                    <td>€ 110,00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                     <div class="content-card">
+                        <h3>Trend: ANPR Tellingen</h3>
+                        <div id="chart-enf-anpr-counts" class="chart-placeholder">ANPR Count Chart Placeholder</div>
+                    </div>
+                 </div>
+             </div>
+
+             <!-- Page: Route Map (with annotation text) -->
+            <div id="page-routemap" class="page">
+                 <div class="content-grid">
+                    <div class="content-card grid-col-span-2">
+                        <h3>Routekaart: Deelritten Volume (Gemeente)</h3>
+                        <img src="img/image.png" alt="Routekaart Gemeente" style="width: 100%; height: auto;">
+                    </div>
+                    <div class="content-card">
+                        <h3>Omschrijving Kaart</h3>
+                        <div id="text-routemap-desc" class="text-placeholder">
+                             <div> <!-- Wrapper for block layout -->
+                                <p data-translate="routeDesc1">Deze kaart toont waarschijnlijke routes op basis van gegevens uit de deelrittenbestanden van <strong>alle jaren die dit dashboard betreft</strong>.</p>
+                                <ul><li data-translate="routeDesc2">De kleur van een segment geeft aan hoeveel deelritten naar verwachting via dat specifieke traject zijn gereisd.</li><li data-translate="routeDesc3">Segmenten op de kaart zijn selecteerbaar...</li></ul>
+                                <h4 data-translate="routeLimitationsTitle">Beperkingen van de kaart</h4>
+                                <ul><li data-translate="routeLimitations1">Alleen bewegingen...</li><li data-translate="routeLimitations2">De kaart toont mogelijke routes...</li><li data-translate="routeLimitations3">De kaart is nog in ontwikkeling...</li></ul>
+                                <p><em><strong data-translate="routeLoadingNote">Let op!</strong>...</em></p>
+                             </div>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+
+            <!-- Other Pages: Structure with simple text placeholders -->
+            <div id="page-nat-shipments" class="page">
+                <div class="content-card">
+                    <h3>Nationale Zendingen</h3>
+                    <iframe title="Nationale Zendingen" width="100%" height="800" src="https://app.powerbi.com/view?r=eyJrIjoiMWM3MDY0OTctYmIxYi00MGEyLWEzOTUtYWM0MjUxNzQ2NzY2IiwidCI6ImExMmE5NDljLTZkOWUtNGFmZi1hMmVmLTA5NmY1YTQzNjhiMCIsImMiOjl9&pageName=ReportSection2b5d4e579757c7673ef9" frameborder="0" allowFullScreen="true"></iframe>
+                </div>
+            </div>
+            <div id="page-int-shipments" class="page">
+                <div class="content-card">
+                    <h3>Internationale Zendingen</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.47.03.png" alt="International Shipments" style="width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-nat-trips" class="page">
+                <div class="content-card">
+                    <h3>Nationale Deelritten</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.47.07.png" alt="National Part-Trips" style="width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-int-trips" class="page">
+                <div class="content-card">
+                    <h3>Internationale Deelritten</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.47.22.png" alt="International Part-Trips" style="width: 100%; height: auto;">
+                </div>
+            </div>
+
+            <div id="page-postcode" class="page">
+                <div class="content-card">
+                    <h3>Deelritten per Postcode</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.47.12.png" alt="Trips by Postal Code" style="width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-nuts" class="page">
+                <div class="content-card">
+                    <h3>NUTS3 Analyse</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.46.57.png" alt="NUTS3 Analysis" style="max-width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-trends" class="page">
+                <div class="content-card">
+                    <h3>Trends</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.46.52.png" alt="Trend Analysis" style="max-width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-data-completeness" class="page">
+                <div class="content-card">
+                    <h3>Datavolledigheid</h3>
+                    <img src="img/Screenshot 2025-04-05 at 10.43.37.png" alt="Data Completeness" style="width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-links" class="page">
+                <div class="content-card">
+                    <h3>Externe Links</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.47.31.png" alt="External Links" style="width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-definitions" class="page">
+                <div class="content-card">
+                    <h3>Definities</h3>
+                    <img src="img/Screenshot 2025-04-05 at 10.43.22.png" alt="Definitions Diagram" style="width: 100%; height: auto;">
+                </div>
+            </div>
+            <div id="page-explanation" class="page">
+                <div class="content-card">
+                    <h3>Toelichting</h3>
+                    <img src="img/Screenshot 2025-04-05 at 09.46.45.png" alt="Explanation Diagram" style="width: 100%; height: auto;">
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JS Links -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- App State ---
+        let currentLanguage = 'nl';
+        let currentPageId = 'page-home';
+        let currentMapZez = null;
+        let currentMapFreight = null;
+
+        // --- Sample Data ---
+        const sampleAnprHourly = {
+            totalVehicles: 156, trucks: 45, vans: 111, violations: 7
+        };
+        const sampleExemptions = [
+            { company: "Transport Groep Nederland B.V.", plate: "VX-***-98", type: "Landelijke ontheffing", validUntil: "2025-12-31", details: "Speciaal transport voertuig > 3.5t" },
+            { company: "Stadsdistributie Utrecht", plate: "1-ABC-***", type: "Lokale ontheffing", validUntil: "2026-06-30", details: "Noodzakelijke stadslogistiek" },
+            { company: "Koeriersdienst De Snelle Vogel", plate: "ZY-***-12", type: "Tijdelijke ontheffing", validUntil: "2025-03-01", details: "Transitieperiode zero-emissie" },
+            { company: "Bouwbedrijf Jansen & Zonen", plate: "TR-***-55", type: "Dag ontheffing", validUntil: "2025-09-15", details: "Incidentele werkzaamheden" },
+            { company: "VersLogistiek Van Dijk", plate: "9-***-XYZ", type: "Lokale ontheffing", validUntil: "2024-12-31", details: "Gekoeld transport" }
+        ];
+        const sampleFines = [
+            { timestamp: "2024-04-10 09:32:15", location: "Camera C03 - Centrumring Oost", plate: "BC-***-11", amount: 110 },
+            { timestamp: "2024-04-10 08:15:40", location: "Camera Z01 - Zone Zuid Ingang", plate: "FG-***-45", amount: 110 },
+            { timestamp: "2024-04-09 14:55:02", location: "Camera C03 - Centrumring Oost", plate: "JK-***-78", amount: 110 },
+            { timestamp: "2024-04-09 11:05:18", location: "Camera N02 - Industrie Noord", plate: "LM-***-01", amount: 110 },
+            { timestamp: "2024-04-08 16:21:59", location: "Camera Z01 - Zone Zuid Ingang", plate: "PQ-***-34", amount: 110 }
+        ];
+        const sampleViolationsPeriod = 28;
+
+        // --- Language Strings ---
+        const translations = {
+            nl: {
+                title: "Gemeentelijk Mobiliteitsdashboard",
+                dashboardTitleShort: "Mobiliteit",
+                navHome: "Home",
+                navZez: "ZEZ Monitoring",
+                langButton: "Switch to English",
+                filterLabelDate: "Datum",
+                filterLabelZone: "ZE Zone",
+                filterOptionAll: "Alle",
+                filterOptionAllZones: "Alle Zones",
+                filterLabelVehicleType: "Voertuigtype",
+                filterOptionAllTypes: "Alle Types",
+                filterOptionTruck: "Vrachtwagens",
+                filterOptionVan: "Bestelwagens",
+                filterLabelStartDate: "Startdatum",
+                filterLabelEndDate: "Einddatum",
+                filterLabelCamera: "Camera ID",
+                filterLabelOrigin: "Oorsprongsgebied",
+                filterLabelDestination: "Bestemmingsgebied",
+                filterLabelGoodsType: "Goederentype",
+                routeDesc1: "Deze kaart toont...",
+                routeDesc2: "De kleur...",
+                routeDesc3: "Segmenten...",
+                routeLimitationsTitle: "Beperkingen...",
+                routeLimitations1: "Alleen...",
+                routeLimitations2: "De kaart...",
+                routeLimitations3: "De kaart is nog...",
+                routeLoadingNote: "Let op!",
+                tableHeaderExemptionType: "Type Ontheffing",
+                filterLabelExemptionType: "Type Ontheffing",
+                filterOptionAllExemptions: "Alle Types",
+                filterOptionLandelijk: "Landelijke ontheffing",
+                filterOptionLokaal: "Lokale ontheffing",
+                filterOptionTijdelijk: "Tijdelijke ontheffing",
+                filterOptionDag: "Dag ontheffing"
+            },
+            en: {
+                title: "Municipal Mobility Dashboard",
+                dashboardTitleShort: "Mobility",
+                navHome: "Home",
+                navZez: "ZEZ Monitoring",
+                langButton: "Schakel naar Nederlands",
+                filterLabelDate: "Date",
+                filterLabelZone: "ZE Zone",
+                filterOptionAll: "All",
+                filterOptionAllZones: "All Zones",
+                filterLabelVehicleType: "Vehicle Type",
+                filterOptionAllTypes: "All Types",
+                filterOptionTruck: "Trucks",
+                filterOptionVan: "Vans",
+                filterLabelStartDate: "Start Date",
+                filterLabelEndDate: "End Date",
+                filterLabelCamera: "Camera ID",
+                filterLabelOrigin: "Origin Area",
+                filterLabelDestination: "Destination Area",
+                filterLabelGoodsType: "Goods Type",
+                routeDesc1: "This map shows...",
+                routeDesc2: "The color...",
+                routeDesc3: "Segments...",
+                routeLimitationsTitle: "Limitations...",
+                routeLimitations1: "Only...",
+                routeLimitations2: "The map shows...",
+                routeLimitations3: "The map is still...",
+                routeLoadingNote: "Note!",
+                tableHeaderExemptionType: "Exemption Type",
+                filterLabelExemptionType: "Exemption Type",
+                filterOptionAllExemptions: "All Types",
+                filterOptionLandelijk: "National exemption",
+                filterOptionLokaal: "Local exemption",
+                filterOptionTijdelijk: "Temporary exemption",
+                filterOptionDag: "Day exemption"
+            }
+        };
+
+        // --- DOM Elements ---
+        const pageTitle = document.getElementById('page-title');
+        const langToggleButton = document.getElementById('lang-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const pages = document.querySelectorAll('#main-content main .page');
+
+        // --- Functions ---
+        function updateDashboardData() {
+            // Update KPIs
+            if (document.getElementById('kpi-vehicles-total')) {
+                document.getElementById('kpi-vehicles-total').textContent = sampleAnprHourly.totalVehicles;
+                document.getElementById('kpi-vehicles-truck').textContent = sampleAnprHourly.trucks;
+                document.getElementById('kpi-vehicles-van').textContent = sampleAnprHourly.vans;
+                document.getElementById('kpi-violations').textContent = sampleAnprHourly.violations;
+            }
+
+            // Update enforcement KPIs if on that page
+            if (document.getElementById('kpi-exemptions-total')) {
+                document.getElementById('kpi-exemptions-total').textContent = sampleExemptions.length;
+                document.getElementById('kpi-fines-total').textContent = `€${sampleFines.reduce((sum, fine) => sum + fine.amount, 0)}`;
+                document.getElementById('kpi-violations-period').textContent = sampleViolationsPeriod;
+            }
+        }
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            const currentTranslations = translations[lang] || {};
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                const translation = currentTranslations[key];
+                if (translation !== undefined) {
+                    if (el.tagName === 'TITLE') document.title = translation;
+                    else el.textContent = translation;
+                } else if (key) {
+                    console.warn(`Missing translation for [${lang}]: ${key}`);
+                }
+            });
+            const activeNavButton = document.querySelector('#sidebar .nav-button.active');
+            if (activeNavButton) {
+                const titleKey = activeNavButton.getAttribute('data-translate');
+                pageTitle.textContent = currentTranslations[titleKey] || pageId.replace('page-','').toUpperCase();
+                pageTitle.setAttribute('data-translate', titleKey);
+            } else {
+                pageTitle.textContent = currentTranslations['navHome'] || "Home";
+                pageTitle.setAttribute('data-translate', 'navHome');
+            }
+            langToggleButton.textContent = currentTranslations['langButton'] || (lang === 'nl' ? 'Switch to English' : 'Schakel naar Nederlands');
+            updateDashboardData();
+        }
+
+        function showPage(pageId) {
+            if (!pageId || !document.getElementById(pageId)) {
+                console.error("showPage: Invalid or non-existent pageId:", pageId, ". Falling back to home.");
+                pageId = 'page-home';
+            }
+            currentPageId = pageId;
+            pages.forEach(page => page.classList.remove('active'));
+            document.querySelectorAll('#sidebar .nav-button').forEach(button => button.classList.remove('active'));
+            document.getElementById(pageId)?.classList.add('active');
+            const targetButton = document.querySelector(`#sidebar .nav-button[data-page="${pageId}"]`);
+            if (targetButton) {
+                targetButton.classList.add('active');
+                const titleKey = targetButton.getAttribute('data-translate');
+                const currentTranslations = translations[currentLanguage] || {};
+                pageTitle.textContent = currentTranslations[titleKey] || pageId.replace('page-','').toUpperCase();
+                pageTitle.setAttribute('data-translate', titleKey);
+            } else {
+                pageTitle.textContent = translations[currentLanguage]?.['navHome'] || "Home";
+                pageTitle.setAttribute('data-translate', 'navHome');
+            }
+            updateDashboardData();
+        }
+
+        // --- Event Listeners ---
+        if (langToggleButton) langToggleButton.addEventListener('click', () => setLanguage(currentLanguage === 'nl' ? 'en' : 'nl'));
+        else console.error("Lang toggle button not found.");
+
+        if (sidebar) sidebar.addEventListener('click', (e) => {
+            const button = e.target.closest('.nav-button');
+            if (button && button.dataset.page) showPage(button.dataset.page);
+        });
+        else console.error("Sidebar not found for navigation.");
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                if (!pageTitle || !sidebar || !mainContent) throw new Error("Core layout elements missing!");
+                setLanguage('nl');
+                showPage('page-home');
+                
+                // Add filter change listeners
+                document.querySelectorAll('.filter-group select, .filter-group input').forEach(filter => {
+                    filter.addEventListener('change', updateDashboardData);
+                });
+                
+                console.log("Dashboard structure initialized (Placeholders - Stable Layout).");
+            } catch(error) {
+                console.error("Initialization failed:", error);
+                document.body.innerHTML = `<div style='color:red; padding:20px;'>Initialization Error: ${error.message}. Check console (F12).</div>`;
+            }
+        });
+    </script>
+
+</body>
+</html>
