@@ -31,13 +31,13 @@ This dashboard is built using:
    git clone https://github.com/robbertjanssen85/ZEZMonitor.git
    ```
 
-2. Open `code-13.html` in a modern web browser
+2. Open `index.html` in a modern web browser
 
 3. No build process required - the dashboard runs directly in the browser
 
 ## Structure
 
-- `code-13.html`: Main dashboard interface
+- `index.html`: Main dashboard interface
 - `img/`: Contains all dashboard images and visualizations
 - `README.md`: Project documentation
 
