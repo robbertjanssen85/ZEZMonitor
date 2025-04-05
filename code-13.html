@@ -121,6 +121,7 @@
         <button class="nav-button active" data-page="page-home" data-translate="navHome">Home</button>
         <button class="nav-button" data-page="page-zez" data-translate="navZez">ZEZ Monitoring</button>
         <button class="nav-button" data-page="page-enforcement" data-translate="navEnforcement">Handhaving & Analyse</button>
+        <button class="nav-button" data-page="page-luchtkwaliteit" data-translate="navLuchtkwaliteit">Luchtkwaliteit</button>
         <button class="nav-button" data-page="page-nat-shipments" data-translate="navNatShipments">Nationale Zendingen</button>
         <button class="nav-button" data-page="page-int-shipments" data-translate="navIntShipments">Internationale Zendingen</button>
         <button class="nav-button" data-page="page-nat-trips" data-translate="navNatTrips">Nationale Deelritten</button>
@@ -180,36 +181,15 @@
                     </div>
                 </div>
                  <div class="content-grid">
-                    <div class="content-card grid-col-span-all">
-                        <h3>Kernindicatoren</h3>
-                        <div class="kpi-container">
-                            <div class="kpi">
-                                <div class="value" id="kpi-vehicles-total">-</div>
-                                <div class="label" data-translate="kpiVehiclesTotal">Voertuigen in ZEZ</div>
-                            </div>
-                            <div class="kpi">
-                                <div class="value" id="kpi-vehicles-truck">-</div>
-                                <div class="label" data-translate="kpiVehiclesTruck">Vrachtwagens</div>
-                            </div>
-                            <div class="kpi">
-                                <div class="value" id="kpi-vehicles-van">-</div>
-                                <div class="label" data-translate="kpiVehiclesVan">Bestelwagens</div>
-                            </div>
-                            <div class="kpi">
-                                <div class="value" id="kpi-violations">-</div>
-                                <div class="label" data-translate="kpiViolations">Mogelijke Overtredingen</div>
-                            </div>
-                        </div>
-                    </div>
-                     <div class="content-card grid-col-span-2">
+                    <div class="content-card grid-col-span-2">
                          <h3>ZEZ Kaart & Camera Locaties</h3>
                          <img src="img/Screenshot 2025-04-05 at 10.02.33.png" alt="ZEZ Map & Camera Locations" style="width: 100%; height: auto;">
                      </div>
-                     <div class="content-card">
+                     <div class="content-card grid-col-span-2" style="min-height: 400px;">
                         <h3>Trend: Voertuigen per Uur</h3>
-                        <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.17.png" alt="Vehicles per Hour Trend" style="width: 100%; height: auto;">
+                        <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.17.png" alt="Vehicles per Hour Trend" style="width: 100%; height: 100%; object-fit: contain;">
                      </div>
-                      <div class="content-card grid-col-span-2">
+                      <div class="content-card grid-col-span-all">
                          <h3>Verdeling Voertuigtypes</h3>
                          <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.58 - 3 januari 2022.png" alt="Vehicle Type Distribution" style="width: 100%; height: auto;">
                      </div>
@@ -415,6 +395,14 @@
                 </div>
             </div>
 
+            <!-- Page: Luchtkwaliteit -->
+            <div id="page-luchtkwaliteit" class="page">
+                <div class="content-card grid-col-span-all">
+                    <h3>Luchtkwaliteit Dashboard</h3>
+                    <img src="img/dashboard_image_luchtkwaliteit.png" alt="Luchtkwaliteit Dashboard" style="width: 100%; height: auto;">
+                </div>
+            </div>
+
             <div id="page-postcode" class="page">
                 <div class="content-card">
                     <h3>Deelritten per Postcode</h3>
@@ -500,6 +488,8 @@
                 dashboardTitleShort: "Mobiliteit",
                 navHome: "Home",
                 navZez: "ZEZ Monitoring",
+                navLuchtkwaliteit: "Luchtkwaliteit",
+                airQualityTitle: "Luchtkwaliteit Dashboard",
                 langButton: "Switch to English",
                 filterLabelDate: "Datum",
                 filterLabelZone: "ZE Zone",
@@ -536,6 +526,8 @@
                 dashboardTitleShort: "Mobility",
                 navHome: "Home",
                 navZez: "ZEZ Monitoring",
+                navLuchtkwaliteit: "Air Quality",
+                airQualityTitle: "Air Quality Dashboard",
                 langButton: "Schakel naar Nederlands",
                 filterLabelDate: "Date",
                 filterLabelZone: "ZE Zone",
