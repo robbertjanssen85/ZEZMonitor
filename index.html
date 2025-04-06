@@ -3,15 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-translate="title">Gemeentelijk Mobiliteitsdashboard</title>
+    <title data-translate="title">Gemeentelijk Dashboard Stadslogistiek</title>
 
-    <!-- CSS Links (Leaflet, Fonts) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- Critical CSS first -->
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Defer non-critical CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
+
+    <!-- Fallback for CSS -->
+    <noscript>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    </noscript>
 
     <!-- Styling -->
     <style>
@@ -26,12 +41,30 @@
         /* --- Base styles (body, sidebar, main, header, page) --- */
         body { font-family: 'Open Sans', sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--dmi-light-grey); color: var(--dmi-dark-grey); font-size: 16px; line-height: 1.6; }
         #sidebar { width: 250px; background-color: var(--pbi-header-bg); color: var(--dmi-white); padding: 20px 0; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+        #sidebar .header-logos {
+            border-bottom: 1px solid #4a637c;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #sidebar .header-logos img {
+            height: 25px;
+            width: auto;
+            margin-right: 0;
+        }
+
+        #sidebar .header-logos {
+            padding: 10px 20px;
+        }
+
         #sidebar h2 { font-size: 1.4em; padding: 0 20px 15px 20px; margin: 0 0 15px 0; border-bottom: 1px solid #4a637c; font-weight: 600; }
         #sidebar button.nav-button { background-color: transparent; color: var(--dmi-white); border: none; padding: 12px 20px; width: 100%; text-align: left; cursor: pointer; font-size: 0.95em; border-left: 4px solid transparent; transition: background-color 0.2s ease, border-left 0.2s ease; }
         #sidebar button.nav-button:hover { background-color: #3e5770; }
         #sidebar button.nav-button.active { background-color: #4a637c; border-left: 4px solid var(--dmi-accent-teal); font-weight: bold; }
         #main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-        #top-header { background-color: var(--dmi-white); padding: 15px 30px; border-bottom: 1px solid var(--dmi-medium-grey); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        #top-header { background-color: var(--dmi-white); padding: 15px 30px; border-bottom: 1px solid var(--dmi-medium-grey); display: flex; justify-content: flex-end; align-items: center; flex-shrink: 0; }
         #top-header h1 { margin: 0; font-size: 1.6em; color: var(--pbi-header-bg); font-weight: 600; }
         #lang-toggle { background-color: var(--dmi-accent-teal); color: var(--dmi-white); border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-size: 0.9em; transition: background-color 0.2s ease; }
         #lang-toggle:hover { background-color: #005f6b; }
@@ -110,69 +143,527 @@
             font-size: 0.95em;
         }
 
+        /* Add logo styles */
+        .header-logos {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-right: auto;
+        }
+        .header-logos img {
+            height: 40px;
+            width: auto;
+        }
+        
+        /* Language flags style */
+        .language-flags {
+            display: flex;
+            gap: 10px;
+            padding: 0 20px;
+            margin-top: auto;
+            margin-bottom: 20px;
+        }
+        .lang-flag {
+            background: none;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+        .lang-flag.active {
+            opacity: 1;
+        }
+        .lang-flag img {
+            width: 24px;
+            height: 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Update nav button styling for bilingual text */
+        #sidebar button.nav-button {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.9em;
+            line-height: 1.2;
+            padding: 10px 20px;
+        }
+
+        /* Updated header styling */
+        #top-header {
+            background-color: var(--dmi-white);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--dmi-medium-grey);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            margin: 0;
+            font-size: 1.8em;
+            color: var(--dmi-primary-blue);
+            font-weight: 600;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .sign-in-section {
+            margin-left: 20px;
+        }
+
+        .sign-in-btn {
+            background-color: var(--dmi-accent-teal);
+            color: var(--dmi-white);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+
+        .sign-in-btn:hover {
+            background-color: #005f9e;  /* Lighter blue for better visibility */
+        }
+
+        .sign-in-btn i {
+            font-size: 1.1em;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .sign-in-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sign-in-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: var(--dmi-primary-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        /* Login Dialog Styles */
+        .login-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-dialog {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-dialog h2 {
+            margin: 0 0 20px;
+            color: var(--dmi-dark-grey);
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .login-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .login-form label {
+            font-size: 14px;
+            color: var(--dmi-dark-grey);
+        }
+
+        .login-form input {
+            padding: 8px 12px;
+            border: 1px solid var(--dmi-medium-grey);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .login-form button {
+            padding: 10px;
+            background-color: var(--dmi-primary-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .login-form button:hover {
+            background-color: var(--dmi-dark-blue);
+        }
+
+        .login-message {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 4px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .language-flags {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .lang-flag {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.2s;
+        }
+        .lang-flag:hover {
+            transform: scale(1.1);
+        }
+        .flag-circle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            font-size: 24px;
+        }
+        .lang-flag.active .flag-circle {
+            box-shadow: 0 0 0 2px var(--dmi-primary-blue);
+        }
+        .disclaimer-text {
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
     </style>
 </head>
 <body>
 
     <!-- Sidebar HTML -->
     <div id="sidebar">
-        <h2 data-translate="dashboardTitleShort">Mobiliteit</h2>
+        <div class="header-logos" style="padding: 10px 20px;">
+            <img src="img/DMI-ECOSYSTEEM-LOGO-RGB-DIAP-72dpi.png" alt="DMI Ecosysteem Logo">
+            <img src="img/logo-ZES.svg" alt="ZES Logo">
+        </div>
         <!-- Nav buttons -->
         <button class="nav-button active" data-page="page-home" data-translate="navHome">Home</button>
-        <button class="nav-button" data-page="page-zez" data-translate="navZez">ZEZ Monitoring</button>
-        <button class="nav-button" data-page="page-enforcement" data-translate="navEnforcement">Handhaving & Analyse</button>
+        <button class="nav-button" data-page="page-trends" data-translate="navTrends">Trends</button>
+        <button class="nav-button" data-page="page-anpr" data-translate="navAnpr">ANPR</button>
+        <button class="nav-button" data-page="page-enforcement" data-translate="navEnforcement">Handhaving</button>
         <button class="nav-button" data-page="page-luchtkwaliteit" data-translate="navLuchtkwaliteit">Luchtkwaliteit</button>
         <button class="nav-button" data-page="page-nat-shipments" data-translate="navNatShipments">Nationale Zendingen</button>
-        <button class="nav-button" data-page="page-int-shipments" data-translate="navIntShipments">Internationale Zendingen</button>
-        <button class="nav-button" data-page="page-nat-trips" data-translate="navNatTrips">Nationale Deelritten</button>
-        <button class="nav-button" data-page="page-int-trips" data-translate="navIntTrips">Internationale Deelritten</button>
-        <button class="nav-button" data-page="page-postcode" data-translate="navPostcode">Deelritten per Postcode</button>
-        <button class="nav-button" data-page="page-nuts" data-translate="navNuts">NUTS3 Analyse</button>
-        <button class="nav-button" data-page="page-routemap" data-translate="navRouteMap">Routekaart Gemeente</button>
-        <button class="nav-button" data-page="page-trends" data-translate="navTrends">Trends</button>
+        <button class="nav-button" data-page="page-int-shipments" data-translate="navIntShipments">Int. Zendingen</button>
+        <button class="nav-button" data-page="page-nat-trips" data-translate="navNatTrips">Nat. Deelritten</button>
+        <button class="nav-button" data-page="page-int-trips" data-translate="navIntTrips">Int. Deelritten</button>
+        <button class="nav-button" data-page="page-postcode" data-translate="navPostcode">Postcode</button>
+        <button class="nav-button" data-page="page-nuts" data-translate="navNuts">NUTS3</button>
+        <button class="nav-button" data-page="page-routemap" data-translate="navRouteMap">Routekaart</button>
+        <button class="nav-button" data-page="page-laden-lossen" data-translate="navLadenLossen">Laden en Lossen</button>
         <button class="nav-button" data-page="page-data-completeness" data-translate="navDataCompleteness">Datavolledigheid</button>
-        <button class="nav-button" data-page="page-links" data-translate="navLinks">Externe Links</button>
+        <button class="nav-button" data-page="page-links" data-translate="navLinks">Links</button>
         <button class="nav-button" data-page="page-explanation" data-translate="navExplanation">Toelichting</button>
         <button class="nav-button" data-page="page-definitions" data-translate="navDefinitions">Definities</button>
+        <button class="nav-button" data-page="page-system" data-translate="navSystem">Systeem</button>
+        <button class="nav-button" data-page="page-placeholder" data-translate="navPlaceholder">Placeholder</button>
+        
+        <!-- Language flags -->
+        <div class="language-flags">
+            <button class="lang-flag active" data-lang="nl">
+                <span class="flag-circle">🇳🇱</span>
+            </button>
+            <button class="lang-flag" data-lang="en">
+                <span class="flag-circle">🇬🇧</span>
+            </button>
+        </div>
+        <div class="disclaimer-text">
+            <em>This is a mock-up - all data is fictional</em>
+        </div>
     </div>
 
     <!-- Main Content Area HTML -->
     <div id="main-content">
         <header id="top-header">
-             <h1 id="page-title">Home</h1>
-             <button id="lang-toggle">Switch to English</button>
+            <div class="header-left">
+                <h1 id="page-title">Home</h1>
+            </div>
+            <div class="header-right">
+                <div class="sign-in-section">
+                    <button class="sign-in-btn" id="signInButton">
+                        <i class="fas fa-user"></i>
+                        <span data-translate="signIn">Inloggen</span>
+                    </button>
+                </div>
+            </div>
         </header>
+
+        <!-- Login Dialog -->
+        <div class="login-overlay" id="loginOverlay">
+            <div class="login-dialog">
+                <h2>Inloggen</h2>
+                <form class="login-form" id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Gebruikersnaam</label>
+                        <input type="text" id="username" value="demo@gemeente.nl" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Wachtwoord</label>
+                        <input type="password" id="password" value="••••••••" required>
+                    </div>
+                    <button type="submit">Inloggen</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Login Success Message -->
+        <div class="login-message" id="loginMessage">
+            Succesvol ingelogd!
+        </div>
 
         <main>
             <!-- Page: Home -->
             <div id="page-home" class="page active">
-                 <div class="content-card">
-                    <h3 data-translate="homeWelcome">Welkom bij het Gemeentelijk Mobiliteitsdashboard</h3>
+                <div class="content-card">
+                    <h3 data-translate="homeWelcome">Welkom bij het Gemeentelijk Dashboard Stadslogistiek</h3>
                     <p data-translate="homeDesc1">Dit dashboard biedt inzicht in stedelijke logistiek en de impact van zero-emissiezones (ZEZ) binnen de gemeente.</p>
                     <p data-translate="homeDesc2">Gebruik de navigatie aan de linkerkant om door de verschillende analyses te bladeren.</p>
-                 </div>
+                </div>
+
+                <div class="content-card">
+                    <h3 data-translate="homeSummaryTitle">Dashboard Overzicht</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <i class="fas fa-camera-rotation"></i>
+                            <h4>ANPR Monitoring</h4>
+                            <p>Real-time inzicht in voertuigbewegingen, inclusief historische trends van vrachtwagens en bestelwagens. Gedetailleerde uitsplitsing van emissienormen (Zero-Emissie, EURO6, EURO5, EURO4) en dagelijkse statistieken.</p>
+                        </div>
+                        
+                        <div class="summary-item">
+                            <i class="fas fa-shield-check"></i>
+                            <h4>Handhaving & Analyse</h4>
+                            <p>Overzicht van ontheffingen, boetes en overtredingen. Inclusief gedetailleerde informatie over verschillende types ontheffingen en handhavingsstatistieken.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-wind"></i>
+                            <h4>Luchtkwaliteit</h4>
+                            <p>Monitoring van NOx, PM2.5, PM10 en NH3 waarden. Historische trends vanaf 2019 en real-time metingen van de afgelopen 7 dagen.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-truck-fast"></i>
+                            <h4>Nationale & Internationale Zendingen</h4>
+                            <p>Analyse van goederenstromen binnen Nederland en grensoverschrijdend transport. Inzicht in volumes, routes en type goederen.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-route"></i>
+                            <h4>Nationale & Internationale Deelritten</h4>
+                            <p>Gedetailleerde informatie over individuele ritten, zowel nationaal als internationaal. Analyse van routes, stops en logistieke efficiëntie.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-map-location-dot"></i>
+                            <h4>Deelritten per Postcode</h4>
+                            <p>Geografische analyse van logistieke bewegingen op postcodeniveau. Visualisatie van hot-spots en distributiepatronen.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-chart-network"></i>
+                            <h4>NUTS3 Analyse</h4>
+                            <p>Regionale analyse op NUTS3-niveau voor inzicht in grotere logistieke patronen en economische regio's.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-map-location"></i>
+                            <h4>Routekaart Gemeente</h4>
+                            <p>Visualisatie van veelgebruikte routes binnen de gemeente, inclusief volume-indicaties en knelpunten.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-chart-line"></i>
+                            <h4>Trends</h4>
+                            <p>Lange-termijn analyse van alle belangrijke indicatoren, inclusief seizoenspatronen en jaar-op-jaar vergelijkingen.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-database"></i>
+                            <h4>Datavolledigheid</h4>
+                            <p>Inzicht in de kwaliteit en volledigheid van de verzamelde data, inclusief eventuele hiaten of onregelmatigheden.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-link"></i>
+                            <h4>Externe Links</h4>
+                            <p>Verwijzingen naar gerelateerde dashboards, beleidsdocumenten en andere relevante bronnen.</p>
+                        </div>
+
+                        <div class="summary-item">
+                            <i class="fas fa-circle-info"></i>
+                            <h4>Toelichting & Definities</h4>
+                            <p>Gedetailleerde uitleg over gebruikte terminologie, meetmethoden en interpretatie van de getoonde data.</p>
+                        </div>
+                    </div>
+
+                    <style>
+                        .summary-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                            gap: 20px;
+                            margin-top: 20px;
+                        }
+                        .summary-item {
+                            background: var(--dmi-white);
+                            border: 1px solid var(--dmi-medium-grey);
+                            border-radius: 8px;
+                            padding: 20px;
+                            transition: all 0.3s ease;
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        .summary-item:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            border-color: var(--dmi-primary-blue);
+                        }
+                        .summary-item i {
+                            font-size: 1.5em;
+                            color: var(--dmi-primary-blue);
+                            margin-bottom: 15px;
+                            display: block;
+                        }
+                        .summary-item h4 {
+                            color: var(--dmi-dark-grey);
+                            margin: 0 0 10px 0;
+                            font-size: 1.1em;
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                        }
+                        .summary-item p {
+                            margin: 0;
+                            font-size: 0.95em;
+                            line-height: 1.5;
+                            color: var(--dmi-dark-grey);
+                        }
+                        .summary-item:hover i {
+                            transform: scale(1.1);
+                            transition: transform 0.3s ease;
+                        }
+                        .hero-images {
+                            display: flex;
+                            gap: 20px;
+                            margin: 20px 0;
+                        }
+                        .hero-image {
+                            flex: 1;
+                            position: relative;
+                            overflow: hidden;
+                            border-radius: 8px;
+                        }
+                        .feature-image {
+                            width: 100%;
+                            height: 300px;
+                            object-fit: cover;
+                            border-radius: 8px;
+                            transition: transform 0.3s ease;
+                        }
+                        .hero-image:hover .feature-image {
+                            transform: scale(1.05);
+                        }
+                        .image-caption {
+                            position: absolute;
+                            bottom: 0;
+                            left: 0;
+                            right: 0;
+                            background: rgba(0,0,0,0.7);
+                            color: white;
+                            padding: 10px;
+                            margin: 0;
+                            font-size: 0.9em;
+                            text-align: center;
+                        }
+                    </style>
+                </div>
             </div>
 
-            <!-- Page: ZEZ Monitoring (with simple placeholders) -->
-            <div id="page-zez" class="page">
+            <!-- Page: ANPR Monitoring -->
+            <div id="page-anpr" class="page">
                 <div class="filter-bar">
                     <h3>Filters</h3>
                     <div class="filter-controls">
                         <div class="filter-group">
-                            <label for="filter-zez-date" data-translate="filterLabelDate">Datum</label>
-                            <input type="date" id="filter-zez-date">
+                            <label for="filter-anpr-date" data-translate="filterLabelDate">Datum</label>
+                            <input type="date" id="filter-anpr-date">
                         </div>
                         <div class="filter-group">
-                            <label for="filter-zez-zone" data-translate="filterLabelZone">ZE Zone</label>
-                            <select id="filter-zez-zone">
+                            <label for="filter-anpr-zone" data-translate="filterLabelZone">Zone</label>
+                            <select id="filter-anpr-zone">
                                 <option value="all" data-translate="filterOptionAll">Alle Zones</option>
                                 <option value="zone1">Zone 1</option>
                                 <option value="zone2">Zone 2</option>
                             </select>
                         </div>
                         <div class="filter-group">
-                            <label for="filter-zez-vehicle" data-translate="filterLabelVehicleType">Voertuigtype</label>
-                            <select id="filter-zez-vehicle">
+                            <label for="filter-anpr-vehicle" data-translate="filterLabelVehicleType">Voertuigtype</label>
+                            <select id="filter-anpr-vehicle">
                                 <option value="all" data-translate="filterOptionAllTypes">Alle Types</option>
                                 <option value="truck" data-translate="filterOptionTruck">Vrachtwagens</option>
                                 <option value="van" data-translate="filterOptionVan">Bestelwagens</option>
@@ -180,20 +671,55 @@
                         </div>
                     </div>
                 </div>
-                 <div class="content-grid">
+
+                <div class="content-card">
+                    <h3>Verdeling op Basis van Emissies (2024)</h3>
+                    <table class="vehicle-emissions-table">
+                        <thead>
+                            <tr>
+                                <th>Voertuigtype</th>
+                                <th>Zero-Emissie</th>
+                                <th>EURO6</th>
+                                <th>EURO5</th>
+                                <th>EURO4</th>
+                                <th>Totaal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Vrachtwagens</td>
+                                <td>182 (12%)</td>
+                                <td>891 (59%)</td>
+                                <td>348 (23%)</td>
+                                <td>91 (6%)</td>
+                                <td>1,512</td>
+                            </tr>
+                            <tr>
+                                <td>Bestelwagens</td>
+                                <td>889 (21%)</td>
+                                <td>2,329 (55%)</td>
+                                <td>762 (18%)</td>
+                                <td>254 (6%)</td>
+                                <td>4,234</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="content-grid">
                     <div class="content-card grid-col-span-2">
-                         <h3>ZEZ Kaart & Camera Locaties</h3>
-                         <img src="img/Screenshot 2025-04-05 at 10.02.33.png" alt="ZEZ Map & Camera Locations" style="width: 100%; height: auto;">
-                     </div>
-                     <div class="content-card grid-col-span-2" style="min-height: 400px;">
+                        <h3>ANPR Camera Locaties</h3>
+                        <img src="img/Screenshot 2025-04-05 at 10.02.33.png" alt="ANPR Map & Camera Locations" loading="lazy" style="width: 100%; height: auto;">
+                    </div>
+                    <div class="content-card grid-col-span-2" style="min-height: 400px;">
                         <h3>Trend: Voertuigen per Uur</h3>
-                        <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.17.png" alt="Vehicles per Hour Trend" style="width: 100%; height: 100%; object-fit: contain;">
-                     </div>
-                      <div class="content-card grid-col-span-all">
-                         <h3>Verdeling Voertuigtypes</h3>
-                         <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.58 - 3 januari 2022.png" alt="Vehicle Type Distribution" style="width: 100%; height: auto;">
-                     </div>
-                 </div>
+                        <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.17.png" alt="Vehicles per Hour Trend" loading="lazy" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="content-card grid-col-span-all">
+                        <h3>Verdeling Voertuigtypes</h3>
+                        <img src="img/Utrecht ANPR - Screenshot 2024-10-25 at 15.33.58 - 3 januari 2022.png" alt="Vehicle Type Distribution" loading="lazy" style="width: 100%; height: auto;">
+                    </div>
+                </div>
             </div>
 
             <!-- Page: Enforcement -->
@@ -341,29 +867,166 @@
                         </table>
                     </div>
                      <div class="content-card">
-                        <h3>Trend: ANPR Tellingen</h3>
-                        <div id="chart-enf-anpr-counts" class="chart-placeholder">ANPR Count Chart Placeholder</div>
+                        <h3>Trend: ANPR Tellingen en Handhaving</h3>
+                        <div class="kpi-container">
+                            <div class="kpi">
+                                <div class="value">428</div>
+                                <div class="label">Waarschuwingsbrieven Verstuurd (2025)</div>
+                            </div>
+                            <div class="kpi">
+                                <div class="value">215</div>
+                                <div class="label">Boetes Uitgedeeld (2025)</div>
+                            </div>
+                            <div class="kpi">
+                                <div class="value">1.99</div>
+                                <div class="label">Verhouding Waarschuwingen/Boetes</div>
+                            </div>
+                        </div>
                     </div>
                  </div>
              </div>
 
              <!-- Page: Route Map (with annotation text) -->
             <div id="page-routemap" class="page">
-                 <div class="content-grid">
+                <div id="routemap-loading" class="content-card" style="display: none;">
+                    <h3>Kaart wordt geladen...</h3>
+                    <div class="loading-spinner">
+                        <i class="fas fa-circle-notch fa-spin fa-3x"></i>
+                    </div>
+                </div>
+                <div id="routemap-content" class="content-grid" style="display: none;">
                     <div class="content-card grid-col-span-2">
                         <h3>Routekaart: Deelritten Volume (Gemeente)</h3>
-                        <img src="img/image.png" alt="Routekaart Gemeente" style="width: 100%; height: auto;">
+                        <div class="video-container">
+                            <div class="video-controls">
+                                <label class="radio-control">
+                                    <input type="radio" name="video-select" value="screenshot" checked>
+                                    <span>Statische weergave</span>
+                                </label>
+                                <label class="radio-control">
+                                    <input type="radio" name="video-select" value="logistiek">
+                                    <span>Gebouwen logistieke functies</span>
+                                </label>
+                                <label class="radio-control">
+                                    <input type="radio" name="video-select" value="intensiteit">
+                                    <span>BMS vrachtintensiteiten op wegennetwerk</span>
+                                </label>
+                                <label class="radio-control">
+                                    <input type="radio" name="video-select" value="herkomst">
+                                    <span>BMS herkomst-bestemmingsrelaties</span>
+                                </label>
+                            </div>
+                            <div class="video-wrapper">
+                                <img id="screenshot-view" class="route-view active" src="/img/image.png" alt="Route Map Screenshot">
+                                <video id="video-logistiek" class="route-view" controls>
+                                    <source src="img/small_gebouw_logistieke_functie.mov" type="video/quicktime">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <video id="video-intensiteit" class="route-view" controls>
+                                    <source src="img/small_BMS_vrachtintensiteiten.mov" type="video/quicktime">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <video id="video-herkomst" class="route-view" controls>
+                                    <source src="img/small_BMS_herkomst-bestemming.mov" type="video/quicktime">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        </div>
+                        <style>
+                            .video-container {
+                                margin-bottom: 20px;
+                            }
+                            .video-controls {
+                                display: flex;
+                                gap: 20px;
+                                margin-bottom: 15px;
+                                flex-wrap: wrap;
+                            }
+                            .radio-control {
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                cursor: pointer;
+                            }
+                            .radio-control input[type="radio"] {
+                                cursor: pointer;
+                            }
+                            .video-wrapper {
+                                position: relative;
+                                width: 100%;
+                                background: #000;
+                                border-radius: 4px;
+                                overflow: hidden;
+                            }
+                            .route-view {
+                                width: 100%;
+                                display: none;
+                            }
+                            .route-view.active {
+                                display: block;
+                            }
+                            #screenshot-view {
+                                max-width: 100%;
+                                height: auto;
+                            }
+                        </style>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const radioButtons = document.querySelectorAll('input[name="video-select"]');
+                                const videos = document.querySelectorAll('.route-view');
+
+                                // Function to stop all videos
+                                function stopAllVideos() {
+                                    videos.forEach(element => {
+                                        if (element.tagName === 'VIDEO') {
+                                            element.pause();
+                                            element.currentTime = 0;
+                                        }
+                                    });
+                                }
+
+                                // Function to switch content
+                                function switchContent(value) {
+                                    stopAllVideos();
+                                    videos.forEach(element => {
+                                        if (
+                                            (element.id === 'screenshot-view' && value === 'screenshot') ||
+                                            (element.id === 'video-' + value)
+                                        ) {
+                                            element.classList.add('active');
+                                        } else {
+                                            element.classList.remove('active');
+                                        }
+                                    });
+                                }
+
+                                // Add event listeners to radio buttons
+                                radioButtons.forEach(radio => {
+                                    radio.addEventListener('change', (e) => {
+                                        switchContent(e.target.value);
+                                    });
+                                });
+                            });
+                        </script>
+                        <iframe src="img/routesv1_Utrecht_20250210_191551_0-11101.html" style="width: 100%; height: 600px; border: none; margin-top: 20px;"></iframe>
                     </div>
                     <div class="content-card">
                         <h3>Omschrijving Kaart</h3>
-                        <div id="text-routemap-desc" class="text-placeholder">
-                             <div> <!-- Wrapper for block layout -->
-                                <p data-translate="routeDesc1">Deze kaart toont waarschijnlijke routes op basis van gegevens uit de deelrittenbestanden van <strong>alle jaren die dit dashboard betreft</strong>.</p>
-                                <ul><li data-translate="routeDesc2">De kleur van een segment geeft aan hoeveel deelritten naar verwachting via dat specifieke traject zijn gereisd.</li><li data-translate="routeDesc3">Segmenten op de kaart zijn selecteerbaar...</li></ul>
-                                <h4 data-translate="routeLimitationsTitle">Beperkingen van de kaart</h4>
-                                <ul><li data-translate="routeLimitations1">Alleen bewegingen...</li><li data-translate="routeLimitations2">De kaart toont mogelijke routes...</li><li data-translate="routeLimitations3">De kaart is nog in ontwikkeling...</li></ul>
-                                <p><em><strong data-translate="routeLoadingNote">Let op!</strong>...</em></p>
-                             </div>
+                        <div class="text-placeholder">
+                            <p>Deze kaart toont waarschijnlijke routes op basis van gegevens uit de deelrittenbestanden van alle jaren die dit dashboard betreft.</p>
+                            <ul>
+                                <li>De kleur van een segment geeft aan hoeveel deelritten naar verwachting via dat specifieke traject zijn gereisd.</li>
+                                <li>Segmenten op de kaart zijn selecteerbaar. Bij selectie verschijnt aanvullende informatie over de deelritten die waarschijnlijk dit segment hebben gevolgd.</li>
+                            </ul>
+                            
+                            <h4>Beperkingen van de kaart</h4>
+                            <ul>
+                                <li>Alleen bewegingen waarbij van zowel de laadlocatie als de loslocatie de PC4 beschikbaar is, zijn meegenomen in de analyse. Voor de datapunten waarvan alleen de PC4 beschikbaar is, is een PC6 aangenomen.</li>
+                                <li>De kaart toont mogelijke routes, maar niet per se de daadwerkelijk gevolgde routes. De nauwkeurigheid hangt af van de kwaliteit van de Open Route Service-routering.</li>
+                                <li>De kaart is nog in ontwikkeling. Hierdoor kunnen sommige segmenten elkaar deels overlappen, wat kan leiden tot onverwachte sprongen in de weergave. Er wordt gewerkt aan een oplossing om dit te verbeteren.</li>
+                            </ul>
+                            
+                            <p><em><strong>Let op!</strong> Het kan 20 seconden duren voordat de kaart hier geladen is.</em></p>
                         </div>
                     </div>
                  </div>
@@ -397,6 +1060,142 @@
 
             <!-- Page: Luchtkwaliteit -->
             <div id="page-luchtkwaliteit" class="page">
+                <div class="content-card">
+                    <h3>Jaargemiddelden Luchtkwaliteit</h3>
+                    <div class="kpi-container">
+                        <div class="kpi">
+                            <div class="value">28.4</div>
+                            <div class="label">NOx (µg/m³) - 2019</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">26.1</div>
+                            <div class="label">NOx (µg/m³) - 2020</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">25.3</div>
+                            <div class="label">NOx (µg/m³) - 2021</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">23.8</div>
+                            <div class="label">NOx (µg/m³) - 2022</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">22.1</div>
+                            <div class="label">NOx (µg/m³) - 2023</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">21.4</div>
+                            <div class="label">NOx (µg/m³) - 2024</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">20.9</div>
+                            <div class="label">NOx (µg/m³) - 2025 YTD</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Jaargemiddelden PM2.5 en PM10</h3>
+                    <div class="kpi-container">
+                        <div class="kpi">
+                            <div class="value">11.2</div>
+                            <div class="label">PM2.5 (µg/m³) - 2024</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">10.8</div>
+                            <div class="label">PM2.5 (µg/m³) - 2025 YTD</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">18.4</div>
+                            <div class="label">PM10 (µg/m³) - 2024</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">17.9</div>
+                            <div class="label">PM10 (µg/m³) - 2025 YTD</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Jaargemiddelden NH3</h3>
+                    <div class="kpi-container">
+                        <div class="kpi">
+                            <div class="value">4.2</div>
+                            <div class="label">NH3 (µg/m³) - 2024</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">4.0</div>
+                            <div class="label">NH3 (µg/m³) - 2025 YTD</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Afgelopen 7 Dagen</h3>
+                    <table class="air-quality-table">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>NOx (µg/m³)</th>
+                                <th>PM2.5 (µg/m³)</th>
+                                <th>PM10 (µg/m³)</th>
+                                <th>NH3 (µg/m³)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>5 apr 2025</td>
+                                <td>19.8</td>
+                                <td>9.2</td>
+                                <td>16.4</td>
+                                <td>3.8</td>
+                            </tr>
+                            <tr>
+                                <td>4 apr 2025</td>
+                                <td>21.2</td>
+                                <td>10.1</td>
+                                <td>17.8</td>
+                                <td>4.1</td>
+                            </tr>
+                            <tr>
+                                <td>3 apr 2025</td>
+                                <td>22.4</td>
+                                <td>11.3</td>
+                                <td>19.2</td>
+                                <td>4.3</td>
+                            </tr>
+                            <tr>
+                                <td>2 apr 2025</td>
+                                <td>20.1</td>
+                                <td>9.8</td>
+                                <td>16.9</td>
+                                <td>3.9</td>
+                            </tr>
+                            <tr>
+                                <td>1 apr 2025</td>
+                                <td>18.9</td>
+                                <td>8.9</td>
+                                <td>15.7</td>
+                                <td>3.6</td>
+                            </tr>
+                            <tr>
+                                <td>31 mrt 2025</td>
+                                <td>19.5</td>
+                                <td>9.4</td>
+                                <td>16.2</td>
+                                <td>3.7</td>
+                            </tr>
+                            <tr>
+                                <td>30 mrt 2025</td>
+                                <td>20.8</td>
+                                <td>10.2</td>
+                                <td>17.5</td>
+                                <td>4.0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <div class="content-card grid-col-span-all">
                     <h3>Luchtkwaliteit Dashboard</h3>
                     <img src="img/dashboard_image_luchtkwaliteit.png" alt="Luchtkwaliteit Dashboard" style="width: 100%; height: auto;">
@@ -446,15 +1245,396 @@
                 </div>
             </div>
 
+            <!-- Page: System (formerly Other) -->
+            <div id="page-system" class="page">
+                <div class="content-card">
+                    <h3>Overige Informatie</h3>
+                    <div class="kpi-container">
+                        <div class="kpi">
+                            <div class="value">89%</div>
+                            <div class="label">Data Beschikbaarheid</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">24/7</div>
+                            <div class="label">Systeem Beschikbaarheid</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">15</div>
+                            <div class="label">Actieve Camera's</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="content-card">
+                        <h3>Systeem Status</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Component</th>
+                                    <th>Status</th>
+                                    <th>Laatste Update</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>ANPR Systeem</td>
+                                    <td><span class="status-ok">Operationeel</span></td>
+                                    <td>6 apr 2025 10:00</td>
+                                </tr>
+                                <tr>
+                                    <td>Database Connectie</td>
+                                    <td><span class="status-ok">Operationeel</span></td>
+                                    <td>6 apr 2025 10:00</td>
+                                </tr>
+                                <tr>
+                                    <td>API Services</td>
+                                    <td><span class="status-ok">Operationeel</span></td>
+                                    <td>6 apr 2025 10:00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="content-card">
+                        <h3>Contact Informatie</h3>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Support Email:</strong></td>
+                                    <td>support@gemeentelijkdashboard.nl</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Technische Support:</strong></td>
+                                    <td>030-1234567</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Kantooruren:</strong></td>
+                                    <td>Ma-Vr 09:00-17:00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Release Notes</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Versie</th>
+                                <th>Datum</th>
+                                <th>Wijzigingen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2.1.0</td>
+                                <td>5 apr 2025</td>
+                                <td>
+                                    <ul>
+                                        <li>Toevoeging luchtkwaliteit historische data</li>
+                                        <li>Verbeterde routekaart visualisatie</li>
+                                        <li>Performance optimalisaties</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2.0.1</td>
+                                <td>20 mrt 2025</td>
+                                <td>
+                                    <ul>
+                                        <li>Bug fixes in data weergave</li>
+                                        <li>UI verbeteringen</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2.0.0</td>
+                                <td>1 mrt 2025</td>
+                                <td>
+                                    <ul>
+                                        <li>Nieuwe dashboard layout</li>
+                                        <li>Toevoeging tweetalige ondersteuning</li>
+                                        <li>Integratie nieuwe databronnen</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: Placeholder -->
+            <div id="page-placeholder" class="page">
+                <div class="content-card">
+                    <h3>Locaties Stadslogistiek Hubs</h3>
+                    <div class="map-container">
+                        <div class="text-placeholder">
+                            <p>Overzicht van actieve stadslogistiek hubs in de gemeente:</p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Locatie</th>
+                                        <th>Type Hub</th>
+                                        <th>Capaciteit</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Lage Weide</td>
+                                        <td>Centrale Hub</td>
+                                        <td>5000m²</td>
+                                        <td><span class="status-ok">Actief</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Papendorp</td>
+                                        <td>Micro-hub</td>
+                                        <td>800m²</td>
+                                        <td><span class="status-ok">Actief</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Centrum West</td>
+                                        <td>Micro-hub</td>
+                                        <td>500m²</td>
+                                        <td><span class="status-ok">Actief</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Locaties Pakketkluizen</h3>
+                    <div class="map-container">
+                        <div class="text-placeholder">
+                            <p>Overzicht van pakketkluizen in de gemeente:</p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Locatie</th>
+                                        <th>Aantal Kluizen</th>
+                                        <th>Bezettingsgraad</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Centraal Station</td>
+                                        <td>50</td>
+                                        <td>85%</td>
+                                        <td><span class="status-ok">Operationeel</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Winkelcentrum Overvecht</td>
+                                        <td>30</td>
+                                        <td>72%</td>
+                                        <td><span class="status-ok">Operationeel</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Leidsche Rijn Centrum</td>
+                                        <td>40</td>
+                                        <td>68%</td>
+                                        <td><span class="status-ok">Operationeel</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Lunetten</td>
+                                        <td>25</td>
+                                        <td>55%</td>
+                                        <td><span class="status-ok">Operationeel</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h3>Stadslogistiek Overzicht</h3>
+                    <div class="text-placeholder">
+                        <ul>
+                            <li>Locatie Hub</li>
+                            <li>Locatie pakketkluizen</li>
+                            <li>Locatie bedrijventerreinen</li>
+                            <li>Overzicht verkeersborden</li>
+                            <li>Oplaadlocaties</li>
+                            <li>Locatie bouwplaatsen</li>
+                            <li>Stremmingen/ files (nader definieren)</li>
+                            <li>Verkeersveiligheid
+                                <ul>
+                                    <li>Aantal letsel ongevallen in het gebied</li>
+                                    <li>Aantal ongevallen met materiële schade</li>
+                                    <li>Ervaren (gepercipieerde) verkeersveiligheid</li>
+                                </ul>
+                            </li>
+                            <li>Melding schade infrastructuur</li>
+                            <li>Aantal SIA-meldingen in het gebied</li>
+                            <li>Aslasten</li>
+                            <li>Totaalmassa's</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Data Visualisatie Placeholder</h3>
+                    <div class="map-container">
+                        <div class="text-placeholder">
+                            <p>Deze sectie zal worden uitgebreid met interactieve kaarten en visualisaties voor bovenstaande datapunten.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page: Laden en Lossen -->
+            <div id="page-laden-lossen" class="page">
+                <div class="content-card grid-col-span-2">
+                    <h3>Laden en Lossen</h3>
+                    <div class="video-container">
+                        <div class="video-controls">
+                            <label class="radio-control">
+                                <input type="radio" name="laden-lossen-select" value="screenshot" checked>
+                                <span>Statische weergave</span>
+                            </label>
+                            <label class="radio-control">
+                                <input type="radio" name="laden-lossen-select" value="analyze">
+                                <span>Analyse video</span>
+                            </label>
+                        </div>
+                        <div class="video-wrapper">
+                            <img id="laden-lossen-screenshot" class="route-view active" src="img/Screenshot 2025-04-06 at 14.26.03.png" alt="Laden en Lossen Screenshot">
+                            <video id="laden-lossen-video" class="route-view" controls>
+                                <source src="img/small_Analyze_LL.mov" type="video/quicktime">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const radioButtons = document.querySelectorAll('input[name="laden-lossen-select"]');
+                            const screenshot = document.getElementById('laden-lossen-screenshot');
+                            const video = document.getElementById('laden-lossen-video');
+
+                            function switchContent(value) {
+                                if (value === 'screenshot') {
+                                    screenshot.classList.add('active');
+                                    video.classList.remove('active');
+                                    video.pause();
+                                } else {
+                                    screenshot.classList.remove('active');
+                                    video.classList.add('active');
+                                }
+                            }
+
+                            radioButtons.forEach(radio => {
+                                radio.addEventListener('change', (e) => {
+                                    switchContent(e.target.value);
+                                });
+                            });
+                        });
+                    </script>
+                </div>
+            </div>
         </main>
     </div>
 
-    <!-- JS Links -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Defer non-critical JS -->
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script defer src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
+        // Use IntersectionObserver for lazy loading images and iframes
+        document.addEventListener('DOMContentLoaded', () => {
+            const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const element = entry.target;
+                        if (element.dataset.src) {
+                            element.src = element.dataset.src;
+                            element.removeAttribute('data-src');
+                        }
+                        observer.unobserve(element);
+                    }
+                });
+            }, {
+                rootMargin: '50px'
+            });
+
+            // Convert all images and iframes to lazy load
+            document.querySelectorAll('img[loading="lazy"], iframe').forEach(element => {
+                if (element.src) {
+                    element.dataset.src = element.src;
+                    element.removeAttribute('src');
+                    lazyLoadObserver.observe(element);
+                }
+            });
+
+            // Optimize page switching
+            const pages = document.querySelectorAll('.page');
+            const pageCache = new Map();
+
+            function showPage(pageId) {
+                // ...existing showPage code...
+                
+                // Cache the page content after first load
+                if (!pageCache.has(pageId)) {
+                    const page = document.getElementById(pageId);
+                    if (page) {
+                        pageCache.set(pageId, true);
+                        // Initialize lazy loading for this page
+                        page.querySelectorAll('img[loading="lazy"], iframe').forEach(element => {
+                            if (element.dataset.src) {
+                                lazyLoadObserver.observe(element);
+                            }
+                        });
+                    }
+                }
+            }
+            
+            // Initialize home page
+            showPage('page-home');
+        });
+
+        // Optimize video loading in routemap
+        function initializeRouteMap() {
+            const videoControls = document.querySelectorAll('input[name="video-select"]');
+            const videos = document.querySelectorAll('.route-view');
+            let activeVideo = null;
+
+            function stopAllVideos() {
+                videos.forEach(element => {
+                    if (element.tagName === 'VIDEO') {
+                        element.pause();
+                        element.currentTime = 0;
+                        if (element !== activeVideo) {
+                            element.removeAttribute('src'); // Unload inactive videos
+                        }
+                    }
+                });
+            }
+
+            function switchContent(value) {
+                stopAllVideos();
+                videos.forEach(element => {
+                    if ((element.id === 'screenshot-view' && value === 'screenshot') ||
+                        (element.id === 'video-' + value)) {
+                        element.classList.add('active');
+                        if (element.tagName === 'VIDEO' && element.dataset.src) {
+                            element.src = element.dataset.src; // Load video only when selected
+                            activeVideo = element;
+                        }
+                    } else {
+                        element.classList.remove('active');
+                    }
+                });
+            }
+
+            videoControls.forEach(radio => {
+                radio.addEventListener('change', (e) => switchContent(e.target.value));
+            });
+        }
         // --- App State ---
         let currentLanguage = 'nl';
         let currentPageId = 'page-home';
@@ -487,12 +1667,26 @@
                 title: "Gemeentelijk Mobiliteitsdashboard",
                 dashboardTitleShort: "Mobiliteit",
                 navHome: "Home",
-                navZez: "ZEZ Monitoring",
+                navAnpr: "ANPR",
+                navEnforcement: "Handhaving",
                 navLuchtkwaliteit: "Luchtkwaliteit",
-                airQualityTitle: "Luchtkwaliteit Dashboard",
-                langButton: "Switch to English",
+                navNatShipments: "Nationale Zendingen",
+                navIntShipments: "Int. Zendingen",
+                navNatTrips: "Nat. Deelritten",
+                navIntTrips: "Int. Deelritten",
+                navPostcode: "Postcode",
+                navNuts: "NUTS3",
+                navRouteMap: "Routekaart",
+                navTrends: "Trends",
+                navDataCompleteness: "Datavolledigheid",
+                navLinks: "Links",
+                navExplanation: "Toelichting",
+                navDefinitions: "Definities",
+                navSystem: "Systeem",
+                navLadenLossen: "Laden en Lossen",
+                signIn: "Inloggen",
                 filterLabelDate: "Datum",
-                filterLabelZone: "ZE Zone",
+                filterLabelZone: "Zone",
                 filterOptionAll: "Alle",
                 filterOptionAllZones: "Alle Zones",
                 filterLabelVehicleType: "Voertuigtype",
@@ -502,35 +1696,40 @@
                 filterLabelStartDate: "Startdatum",
                 filterLabelEndDate: "Einddatum",
                 filterLabelCamera: "Camera ID",
-                filterLabelOrigin: "Oorsprongsgebied",
-                filterLabelDestination: "Bestemmingsgebied",
-                filterLabelGoodsType: "Goederentype",
-                routeDesc1: "Deze kaart toont...",
-                routeDesc2: "De kleur...",
-                routeDesc3: "Segmenten...",
-                routeLimitationsTitle: "Beperkingen...",
-                routeLimitations1: "Alleen...",
-                routeLimitations2: "De kaart...",
-                routeLimitations3: "De kaart is nog...",
-                routeLoadingNote: "Let op!",
-                tableHeaderExemptionType: "Type Ontheffing",
                 filterLabelExemptionType: "Type Ontheffing",
                 filterOptionAllExemptions: "Alle Types",
                 filterOptionLandelijk: "Landelijke ontheffing",
                 filterOptionLokaal: "Lokale ontheffing",
                 filterOptionTijdelijk: "Tijdelijke ontheffing",
-                filterOptionDag: "Dag ontheffing"
+                filterOptionDag: "Dag ontheffing",
+                homeWelcome: "Welkom bij het Gemeentelijk Dashboard Stadslogistiek",
+                homeDesc1: "Dit dashboard biedt inzicht in stedelijke logistiek en de impact van zero-emissiezones (ZEZ) binnen de gemeente.",
+                homeDesc2: "Gebruik de navigatie aan de linkerkant om door de verschillende analyses te bladeren."
             },
             en: {
                 title: "Municipal Mobility Dashboard",
                 dashboardTitleShort: "Mobility",
                 navHome: "Home",
-                navZez: "ZEZ Monitoring",
+                navAnpr: "ANPR",
+                navEnforcement: "Enforcement",
                 navLuchtkwaliteit: "Air Quality",
-                airQualityTitle: "Air Quality Dashboard",
-                langButton: "Schakel naar Nederlands",
+                navNatShipments: "National Shipments",
+                navIntShipments: "Int. Shipments",
+                navNatTrips: "Nat. Trips",
+                navIntTrips: "Int. Trips",
+                navPostcode: "Postal Code",
+                navNuts: "NUTS3",
+                navRouteMap: "Route Map",
+                navTrends: "Trends",
+                navDataCompleteness: "Data Completeness",
+                navLinks: "Links",
+                navExplanation: "Explanation",
+                navDefinitions: "Definitions",
+                navSystem: "System",
+                navLadenLossen: "Loading and Unloading",
+                signIn: "Sign In",
                 filterLabelDate: "Date",
-                filterLabelZone: "ZE Zone",
+                filterLabelZone: "Zone",
                 filterOptionAll: "All",
                 filterOptionAllZones: "All Zones",
                 filterLabelVehicleType: "Vehicle Type",
@@ -540,24 +1739,15 @@
                 filterLabelStartDate: "Start Date",
                 filterLabelEndDate: "End Date",
                 filterLabelCamera: "Camera ID",
-                filterLabelOrigin: "Origin Area",
-                filterLabelDestination: "Destination Area",
-                filterLabelGoodsType: "Goods Type",
-                routeDesc1: "This map shows...",
-                routeDesc2: "The color...",
-                routeDesc3: "Segments...",
-                routeLimitationsTitle: "Limitations...",
-                routeLimitations1: "Only...",
-                routeLimitations2: "The map shows...",
-                routeLimitations3: "The map is still...",
-                routeLoadingNote: "Note!",
-                tableHeaderExemptionType: "Exemption Type",
                 filterLabelExemptionType: "Exemption Type",
                 filterOptionAllExemptions: "All Types",
                 filterOptionLandelijk: "National exemption",
                 filterOptionLokaal: "Local exemption",
                 filterOptionTijdelijk: "Temporary exemption",
-                filterOptionDag: "Day exemption"
+                filterOptionDag: "Day exemption",
+                homeWelcome: "Welcome to the Municipal Urban Logistics Dashboard",
+                homeDesc1: "This dashboard provides insight into urban logistics and the impact of zero-emission zones (ZEZ) within the municipality.",
+                homeDesc2: "Use the navigation on the left to browse through the different analyses."
             }
         };
 
@@ -599,6 +1789,12 @@
                     console.warn(`Missing translation for [${lang}]: ${key}`);
                 }
             });
+            
+            // Update active language flag
+            document.querySelectorAll('.lang-flag').forEach(flag => {
+                flag.classList.toggle('active', flag.dataset.lang === lang);
+            });
+            
             const activeNavButton = document.querySelector('#sidebar .nav-button.active');
             if (activeNavButton) {
                 const titleKey = activeNavButton.getAttribute('data-translate');
@@ -608,7 +1804,6 @@
                 pageTitle.textContent = currentTranslations['navHome'] || "Home";
                 pageTitle.setAttribute('data-translate', 'navHome');
             }
-            langToggleButton.textContent = currentTranslations['langButton'] || (lang === 'nl' ? 'Switch to English' : 'Schakel naar Nederlands');
             updateDashboardData();
         }
 
@@ -621,6 +1816,24 @@
             pages.forEach(page => page.classList.remove('active'));
             document.querySelectorAll('#sidebar .nav-button').forEach(button => button.classList.remove('active'));
             document.getElementById(pageId)?.classList.add('active');
+            
+            // Handle Route page lazy loading
+            if (pageId === 'page-routemap') {
+                const loadingDiv = document.getElementById('routemap-loading');
+                const contentDiv = document.getElementById('routemap-content');
+                
+                if (loadingDiv && contentDiv) {
+                    loadingDiv.style.display = 'block';
+                    contentDiv.style.display = 'none';
+                    
+                    // Simulate loading delay for the iframe
+                    setTimeout(() => {
+                        loadingDiv.style.display = 'none';
+                        contentDiv.style.display = 'block';
+                    }, 1000);
+                }
+            }
+            
             const targetButton = document.querySelector(`#sidebar .nav-button[data-page="${pageId}"]`);
             if (targetButton) {
                 targetButton.classList.add('active');
@@ -649,6 +1862,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 if (!pageTitle || !sidebar || !mainContent) throw new Error("Core layout elements missing!");
+                
+                // Add language flag listeners
+                document.querySelectorAll('.lang-flag').forEach(flag => {
+                    flag.addEventListener('click', () => setLanguage(flag.dataset.lang));
+                });
+                
                 setLanguage('nl');
                 showPage('page-home');
                 
@@ -663,6 +1882,51 @@
                 document.body.innerHTML = `<div style='color:red; padding:20px;'>Initialization Error: ${error.message}. Check console (F12).</div>`;
             }
         });
+
+        // --- Login Related Functions ---
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginForm = document.getElementById('loginForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const signInButton = document.getElementById('signInButton');
+
+        function showLoginDialog() {
+            loginOverlay.style.display = 'flex';
+        }
+
+        function hideLoginDialog() {
+            loginOverlay.style.display = 'none';
+        }
+
+        function showLoginMessage() {
+            loginMessage.style.display = 'block';
+            setTimeout(() => {
+                loginMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        // Event Listeners for Login
+        signInButton.addEventListener('click', showLoginDialog);
+
+        loginOverlay.addEventListener('click', (e) => {
+            if (e.target === loginOverlay) {
+                hideLoginDialog();
+            }
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            hideLoginDialog();
+            showLoginMessage();
+            
+            // Update sign in button to show logged in state
+            signInButton.innerHTML = `
+                <i class="fas fa-user"></i>
+                <span>Ingelogd</span>
+            `;
+            signInButton.style.backgroundColor = '#4CAF50';
+            signInButton.disabled = true;
+        });
+
     </script>
 
 </body>

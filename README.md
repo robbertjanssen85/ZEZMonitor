@@ -4,7 +4,7 @@ A comprehensive municipal mobility dashboard for monitoring Zero Emission Zones 
 
 ## Features
 
-- **ZEZ Monitoring**: Real-time monitoring of zero-emission zones with camera locations and vehicle tracking
+- **ANPR Monitoring**: Real-time monitoring with camera locations and vehicle tracking
 - **Enforcement & Analysis**: Detailed insights into exemptions, fines, and ANPR data
 - **Air Quality**: Integration with air quality monitoring systems
 - **Logistics Analysis**:
@@ -43,7 +43,7 @@ This dashboard is built using:
 
 ## Features in Detail
 
-### ZEZ Monitoring
+### ANPR Monitoring
 - Real-time vehicle tracking
 - Zone-based monitoring
 - Vehicle type classification
